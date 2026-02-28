@@ -7,10 +7,22 @@
 
 
 typedef enum TK_TYPE {
-    NEWLINE,
-    VALUE,
-    ASSIGNMENT,
-    OUTPUT
+    TK_VALUE,
+
+    TK_LBRACKET,
+    TK_LSBRACKET,
+    TK_NOT,
+    TK_LEFTSHIFT,
+    TK_LESSTHAN,
+    TK_NAND,
+    TK_ASSIGNMENT,
+    TK_RSBRACKET,
+    TK_RBRACKET,
+
+
+    TK_KEYWORD,
+    TK_OUTPUT,
+    TK_NEWLINE
 } TK_TYPE;
 
 
@@ -27,11 +39,11 @@ typedef struct {
 } Lexer;
 
 
-Lexer *lex(const char *data);
-void lex_num(const char *data, Lexer *lexer);
+Lexer *lex(const char *program, size_t len);
+void lex_num(const char *program, size_t len, Lexer *lexer);
 
 Lexer *lexer_init(void);
 void lexer_free(Lexer *lexer);
-void lexer_add(Lexer *lexer, TK_TYPE type, size_t value);
+void lexer_push(Lexer *lexer, TK_TYPE type, size_t value);
 
 #endif

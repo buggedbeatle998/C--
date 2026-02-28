@@ -1,11 +1,12 @@
 #include "lexer.h"
 
 
-Lexer *lex(const char *data) {
+Lexer *lex(const char *program, size_t len) {
     Lexer *lexer = lexer_init();
     char val;
 
-    while ((val = data[lexer->ptr]) != '\0') {
+    while (lexer->ptr < len) {
+        val = program[lexer->ptr];
         switch (val) {
             case ' ':
             case '\n':
@@ -14,7 +15,7 @@ Lexer *lex(const char *data) {
                 break;
 
             case ';':
-                lexer_add(lexer, NEWLINE, 0);
+                lexer_push(lexer, TK_NEWLINE, 0);
                 break;
 
             case '0':
@@ -27,16 +28,33 @@ Lexer *lex(const char *data) {
             case '7':
             case '8':
             case '9':
-                lex_num(data, lexer);
+                lex_num(program, len, lexer);
                 break;
 
             case '=':
-                lexer_add(lexer, ASSIGNMENT, 0);
+                lexer_push(lexer, TK_ASSIGNMENT, 0);
                 break;
 
             case '>':
-                lexer_add(lexer, OUTPUT, 0);
+                lexer_push(lexer, TK_OUTPUT, 0);
                 break;
+
+            case '(':
+                lexer_push(lexer, TK_LBRACKET, 0);
+                break;
+
+            case ')':
+                lexer_push(lexer, TK_RBRACKET, 0);
+                break;
+
+            case '[':
+                lexer_push(lexer, TK_LSBRACKET, 0);
+                break;
+
+            case ']':
+                lexer_push(lexer, TK_RSBRACKET, 0);
+                break;
+
 
             default:
                 break;
@@ -48,12 +66,12 @@ Lexer *lex(const char *data) {
 }
 
 
-void lex_num(const char *data, Lexer *lexer) {
+void lex_num(const char *program, size_t len, Lexer *lexer) {
     size_t total = 0;
     char val;
     
-    while (true) {
-        val = data[lexer->ptr];
+    while (lexer->ptr < len) {
+        val = program[lexer->ptr];
         if (val < '0' || val > '9')
             break;
         
@@ -63,7 +81,7 @@ void lex_num(const char *data, Lexer *lexer) {
     }
     --lexer->ptr;
 
-    lexer_add(lexer, VALUE, total);
+    lexer_push(lexer, TK_VALUE, total);
 }
 
 
@@ -84,7 +102,7 @@ void lexer_free(Lexer *lexer) {
 }
 
 
-void lexer_add(Lexer *lexer, TK_TYPE type, size_t value) {
+void lexer_push(Lexer *lexer, TK_TYPE type, size_t value) {
     if (lexer->len >= lexer->cap) {
         lexer->cap <<= 1;
         lexer = realloc(lexer, lexer->cap);
