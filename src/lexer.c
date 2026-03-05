@@ -1,5 +1,5 @@
 #include "lexer.h"
-
+#include <stdio.h>
 
 Lexer *lex(const char *program, size_t len) {
     Lexer *lexer = lexer_init();
@@ -35,8 +35,17 @@ Lexer *lex(const char *program, size_t len) {
                 lexer_push(lexer, TK_ASSIGNMENT, 0);
                 break;
 
+            case '^':
+                lexer_push(lexer, TK_NAND, 0);
+                break;
+
             case '>':
-                lexer_push(lexer, TK_OUTPUT, 0);
+                if (program[lexer->ptr + 1] == '0') {
+                    ++lexer->ptr;
+                    lexer_push(lexer, TK_OUTPUT_INT, 0);
+                } else {
+                    lexer_push(lexer, TK_OUTPUT, 0);
+                }
                 break;
 
             case '(':
@@ -105,7 +114,7 @@ void lexer_free(Lexer *lexer) {
 void lexer_push(Lexer *lexer, TK_TYPE type, size_t value) {
     if (lexer->len >= lexer->cap) {
         lexer->cap <<= 1;
-        lexer = realloc(lexer, lexer->cap);
+        lexer->tokens = realloc(lexer->tokens, sizeof(Token) * lexer->cap);
     }
 
     lexer->tokens[lexer->len++] = (Token){

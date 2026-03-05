@@ -2,6 +2,7 @@
 
 #include "lexer.h"
 #include "parser.h"
+#include "emitter.h"
 
 
 int main(void) {
@@ -15,20 +16,33 @@ int main(void) {
         fclose(f);
         
         Lexer *lexer = lex(program, len);
-        for (size_t i = 0; i < lexer->len; ++i) {
-            printf("%d %llu\n", lexer->tokens[i].type, lexer->tokens[i].value);
-        }
-        printf("\n");
+        printf("Lexed!\n");
+        //for (size_t i = 0; i < lexer->len; ++i) {
+        //    printf("%d %llu\n", lexer->tokens[i].type, lexer->tokens[i].value);
+        //}
+        //printf("\n");
         
         Parser *parser = parse(lexer->tokens, lexer->len);
         lexer_free(lexer);
-        for (size_t i = 0; i < parser->ast.len; ++i) {
-            printf("%d\n", parser->ast.statements[i].type);
-            printf("%d\n", parser->ast.statements[i].left->type);
-            printf("%d\n", parser->ast.statements[i].right->type);
+        printf("Parsed!\n");
+        //for (size_t i = 0; i < parser->ast.len; ++i) {
+        //    printf("%d\n", parser->ast.statements[i].type);
+        //    //printf("%d\n", parser->ast.statements[i].left->type);
+        //    //printf("%d\n", parser->ast.statements[i].right->type);
+        //}
+
+        Emitter *emitter = emit(parser->ast.statements, parser->ast.len);
+        parser_free(parser);
+        printf("Emitted!\n");
+        
+        f = fopen("../test.c", "w");
+        if (f) {
+            fprintf(f, emitter->program.string);
+            fclose(f);
+            printf("Written!\n");
         }
 
-        parser_free(parser);
+        emitter_free(emitter);
 
     } else {
         printf("No file found!\n");

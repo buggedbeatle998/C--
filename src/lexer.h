@@ -11,9 +11,6 @@ typedef enum TK_TYPE {
 
     TK_LBRACKET,
     TK_LSBRACKET,
-    TK_NOT,
-    TK_LEFTSHIFT,
-    TK_LESSTHAN,
     TK_NAND,
     TK_ASSIGNMENT,
     TK_RSBRACKET,
@@ -22,6 +19,7 @@ typedef enum TK_TYPE {
 
     TK_KEYWORD,
     TK_OUTPUT,
+    TK_OUTPUT_INT,
     TK_NEWLINE
 } TK_TYPE;
 

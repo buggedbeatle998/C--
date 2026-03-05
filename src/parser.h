@@ -13,15 +13,13 @@ IMPLEMENT_TYPE_STACK(TK_TYPE, Op_Stack)
 
 typedef enum ND_TYPE {
     ND_OUTPUT,
+    ND_OUTPUT_INT,
     
     ND_VALUE,
     ND_EXPRESSION,
 
     ND_ADDRESS,
-    ND_NOT,
 
-    ND_LEFTSHIFT,
-    ND_LESSTHAN,
     ND_NAND,
     ND_ASSIGNMENT
 } ND_TYPE;
@@ -49,7 +47,7 @@ typedef struct {
 
 
 Parser *parse(const Token *tokens, size_t len);
-void parse_expr(const Token *tokens, size_t len, Parser *parser);
+Node *parse_expr(const Token *tokens, size_t len, Parser *parser);
 void parse_op(const Token *tokens, size_t len, Parser *parser, TK_TYPE);
 void parse_keyword(const Token *tokens, size_t len, Parser *parser);
 
@@ -58,5 +56,6 @@ void parser_free(Parser *parser);
 void parser_push(Parser *parser, Node *node);
 
 Node *node_init(ND_TYPE type, size_t value);
+void node_free(Node *node);
 
 #endif
