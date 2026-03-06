@@ -8,7 +8,7 @@ Emitter *emit(Node *statements, size_t len) {
     Node val = statements[emitter->ptr];
     emitter_cat(emitter, "char *data = calloc(sizeof(char), ");
     char temp[64];
-    sprintf(temp, "%llu", val.left->value);
+    sprintf(temp, "%zu", val.left->value);
     emitter_cat(emitter, temp);
     emitter_cat(emitter, ");\n");
 
@@ -20,13 +20,13 @@ Emitter *emit(Node *statements, size_t len) {
                 break;
 
             case ND_OUTPUT:
-                emitter_cat(emitter, "printf(\"%%s\", data + ");
+                emitter_cat(emitter, "printf(\"%s\", data + ");
                 emit_expr(val.left, emitter);
                 emitter_cat(emitter, ")");
                 break;
             
             case ND_OUTPUT_INT:
-                emitter_cat(emitter, "printf(\"%%u\", ");
+                emitter_cat(emitter, "printf(\"%u\", ");
                 emit_expr(val.left, emitter);
                 emitter_cat(emitter, ")");
                 break;
@@ -46,7 +46,7 @@ void emit_expr(Node *statement, Emitter *emitter) {
     char temp[64];
     switch (statement->type) {
         case ND_VALUE:
-            sprintf(temp, "%llu", statement->value);
+            sprintf(temp, "%zu", statement->value);
             emitter_cat(emitter, temp);
             break;
 

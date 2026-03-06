@@ -1,15 +1,16 @@
 #include "lexer.h"
-#include <stdio.h>
+
 
 Lexer *lex(const char *program, size_t len) {
     Lexer *lexer = lexer_init();
     char val;
 
+
     while (lexer->ptr < len) {
         val = program[lexer->ptr];
         switch (val) {
-            case ' ':
             case '\n':
+            case ' ':
             case '\t':
                 // Whitespace is ignored
                 break;
@@ -64,11 +65,15 @@ Lexer *lex(const char *program, size_t len) {
                 lexer_push(lexer, TK_RSBRACKET, 0);
                 break;
 
-
             default:
-                break;
+                lexer_free(lexer);
+                comp_error("Lexer", "Unexpected Token!", lexer->line, lexer->col);
+                
         }
         ++lexer->ptr;
+        lexer_next(lexer);
+        if (val == '\n')
+            lexer_newline(lexer);
     }
 
     return lexer;
@@ -100,6 +105,9 @@ Lexer *lexer_init(void) {
     lexer->cap = 64;
     lexer->tokens = malloc(sizeof(Token) * lexer->cap);
     lexer->ptr = 0;
+    lexer->line_ptr = 0;
+    lexer->line = 1;
+    lexer->col = 1;
 
     return lexer;
 }
@@ -111,6 +119,17 @@ void lexer_free(Lexer *lexer) {
 }
 
 
+void lexer_next(Lexer *lexer) {
+    lexer->col = lexer->ptr - lexer->line_ptr + 1;
+}
+
+void lexer_newline(Lexer *lexer) {
+    ++lexer->line;
+    lexer->line_ptr = lexer->ptr;
+    lexer->col = 1;
+}
+
+
 void lexer_push(Lexer *lexer, TK_TYPE type, size_t value) {
     if (lexer->len >= lexer->cap) {
         lexer->cap <<= 1;
@@ -119,6 +138,8 @@ void lexer_push(Lexer *lexer, TK_TYPE type, size_t value) {
 
     lexer->tokens[lexer->len++] = (Token){
         type,
+        lexer->line,
+        lexer->col,
         value
     };
 }

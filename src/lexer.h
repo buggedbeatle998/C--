@@ -5,6 +5,8 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
+#include "comp_error.h"
+
 
 typedef enum TK_TYPE {
     TK_VALUE,
@@ -26,7 +28,9 @@ typedef enum TK_TYPE {
 
 typedef struct {
     TK_TYPE type;
-    size_t value;
+    int line;
+    int col;
+    char value;
 } Token;
 
 typedef struct {
@@ -34,6 +38,9 @@ typedef struct {
     size_t cap;
     Token *tokens;
     size_t ptr;
+    size_t line_ptr;
+    int line;
+    int col;
 } Lexer;
 
 
@@ -42,6 +49,8 @@ void lex_num(const char *program, size_t len, Lexer *lexer);
 
 Lexer *lexer_init(void);
 void lexer_free(Lexer *lexer);
+void lexer_next(Lexer *lexer);
+void lexer_newline(Lexer *lexer);
 void lexer_push(Lexer *lexer, TK_TYPE type, size_t value);
 
 #endif
