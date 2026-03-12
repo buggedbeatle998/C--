@@ -1,9 +1,6 @@
 #ifndef H_COMP_ERROR
 #define H_COMP_ERROR
 
-#include <stdio.h>
-#include <stdlib.h>
-
 
 typedef struct {
     const char *data;

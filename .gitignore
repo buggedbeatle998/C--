@@ -2,3 +2,4 @@ bin/*
 build/*
 test
 test.c
+g--test.c

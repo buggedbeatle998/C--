@@ -1,5 +1,10 @@
 #include "lexer.h"
 
+#include <stdint.h>
+#include <stdbool.h>
+
+#include "comp_error.h"
+
 
 Lexer *lex(const char *program, size_t len) {
     Lexer *lexer = lexer_init();
@@ -65,9 +70,21 @@ Lexer *lex(const char *program, size_t len) {
                 lexer_push(lexer, TK_RSBRACKET, 0);
                 break;
 
+            case '{':
+                lexer_push(lexer, TK_LCBRACKET, 0);
+                break;
+
+            case '}':
+                lexer_push(lexer, TK_RCBRACKET, 0);
+                break;
+
             default:
+                if ('a' <= val && val <= 'z') {
+                    lex_keyword(program, len, lexer);
+                    break;
+                }
                 lexer_free(lexer);
-                comp_error("Lexer", "Unexpected Token!", lexer->line, lexer->col);
+                comp_error("Lexer", "Unrecognised Token!", lexer->line, lexer->col);
                 
         }
         ++lexer->ptr;
@@ -76,7 +93,29 @@ Lexer *lex(const char *program, size_t len) {
             lexer_newline(lexer);
     }
 
+    lexer_push(lexer, TK_EOF, 0);
+
     return lexer;
+}
+
+
+void lex_keyword(const char *program, size_t len, Lexer *lexer) {
+    size_t str_len = 0;
+    char *string = malloc(sizeof(char) * 64);
+    char val;
+    
+    while (lexer->ptr < len) {
+        val = program[lexer->ptr];
+        if (val < 'a' || val > 'z')
+            break;
+        
+        string[str_len++] = val;
+        ++lexer->ptr;
+    }
+    string[str_len] = '\0';
+    --lexer->ptr;
+
+    lexer_push_str(lexer, TK_KEYWORD, string);
 }
 
 
@@ -114,6 +153,10 @@ Lexer *lexer_init(void) {
 
 
 void lexer_free(Lexer *lexer) {
+    for (size_t i = 0; i < lexer->len; ++i) {
+        if (lexer->tokens[i].type == TK_KEYWORD)
+            free((char *)lexer->tokens[i].value);
+    }
     free(lexer->tokens);
     free(lexer);
 }
@@ -136,10 +179,27 @@ void lexer_push(Lexer *lexer, TK_TYPE type, size_t value) {
         lexer->tokens = realloc(lexer->tokens, sizeof(Token) * lexer->cap);
     }
 
-    lexer->tokens[lexer->len++] = (Token){
+    Token temp = (Token){
         type,
         lexer->line,
         lexer->col,
-        value
     };
+    temp.value = value;
+    lexer->tokens[lexer->len++] = temp;
+}
+
+
+void lexer_push_str(Lexer *lexer, TK_TYPE type, char *value) {
+    if (lexer->len >= lexer->cap) {
+        lexer->cap <<= 1;
+        lexer->tokens = realloc(lexer->tokens, sizeof(Token) * lexer->cap);
+    }
+
+    Token temp = (Token){
+        type,
+        lexer->line,
+        lexer->col,
+    };
+    temp.str_val = value;
+    lexer->tokens[lexer->len++] = temp;
 }

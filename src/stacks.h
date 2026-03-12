@@ -25,9 +25,10 @@ HLOCAL void stack_free(Stack *stack);
 HLOCAL void stack_push(Stack *stack, void *value);
 HLOCAL void stack_pop(Stack *stack);
 HLOCAL void *stack_peek(Stack *stack);
-HLOCAL void * stack_peekpop(Stack *stack);
+HLOCAL void *stack_peekpop(Stack *stack);
 HLOCAL void stack_clear(Stack *stack);
 HLOCAL bool stack_is_empty(Stack *stack);
+HLOCAL size_t stack_size(Stack *stack);
 
 
 #ifdef IMPLEMENT_STACK
@@ -75,6 +76,10 @@ HLOCAL bool stack_is_empty(Stack *stack);
         return stack->size == 0;
     }
 
+    HLOCAL size_t stack_size(Stack *stack) {
+        return stack->size;
+    }
+
 // generic macro
 
     #define IMPLEMENT_TYPE_STACK(type, handle) \
@@ -88,7 +93,8 @@ HLOCAL bool stack_is_empty(Stack *stack);
     static inline type   handle##_peek     (handle stack) {return *(type *)stack_peek(stack.stack);} \
     static inline type   handle##_peekpop  (handle stack) {return *(type *)stack_peekpop(stack.stack);} \
     static inline void   handle##_clear    (handle stack) {stack_clear(stack.stack);} \
-    static inline bool   handle##_is_empty (handle stack) {return stack_is_empty(stack.stack);}
+    static inline bool   handle##_is_empty (handle stack) {return stack_is_empty(stack.stack);} \
+    static inline size_t handle##_size     (handle stack) {return stack_size(stack.stack);}
 // end
 #endif
 

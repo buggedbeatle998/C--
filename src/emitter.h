@@ -1,10 +1,7 @@
 #ifndef H_EMITTER
 #define H_EMITTER
 
-#include <stdint.h>
-#include <stdbool.h>
 #include <stdlib.h>
-#include <stdio.h>
 
 #include "parser.h"
 
@@ -22,7 +19,9 @@ typedef struct {
 } Emitter;
 
 
-Emitter *emit(Node *statements, size_t len);
+Emitter *emit(Node global_scope);
+void emit_statement(Node *statement, Emitter *emitter);
+void emit_scope(Node *statements, size_t len, Emitter *emitter);
 void emit_expr(Node *statement, Emitter *emitter);
 
 Emitter *emitter_init(void);
