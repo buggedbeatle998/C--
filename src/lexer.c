@@ -15,6 +15,7 @@ Lexer *lex(const char *program, size_t len) {
         val = program[lexer->ptr];
         switch (val) {
             case '\n':
+            case '\r':
             case ' ':
             case '\t':
                 // Whitespace is ignored

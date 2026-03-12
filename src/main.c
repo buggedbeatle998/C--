@@ -57,13 +57,14 @@ int main(int argc, char *const argv[]) {
         }
     }
 
-    FILE *f = fopen(argv[optind], "r");
+    FILE *f = fopen(argv[optind], "rb");
     if (f) {
         fseek(f, 0, SEEK_END);
         size_t len = ftell(f);
         fseek(f, 0, SEEK_SET);
         char *buff = malloc(sizeof(char) * (len + 1));
         fread(buff, sizeof(char), len, f);
+        buff[len] = '\0';
         fclose(f);
 
         set_program_data(buff, argv[optind]);
@@ -121,7 +122,7 @@ int main(int argc, char *const argv[]) {
             }
         } else {
 // TODO Add MSVC
-// FIXME Windows
+// TODO Add functions
             if (debug)
 #if defined(__GNUC__)
                 puts("gcc");
