@@ -18,9 +18,8 @@ typedef enum ND_TYPE {
     
     ND_VALUE,
     ND_EXPRESSION,
-
     ND_ADDRESS,
-
+    ND_EXECUTE,
     ND_NAND,
     ND_ASSIGNMENT
 } ND_TYPE;

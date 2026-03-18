@@ -45,6 +45,7 @@ Node *parse_statement(Lexer *lexer, Parser *parser) {
         case TK_LBRACKET:
         case TK_LSBRACKET:
         case TK_VALUE:
+        case TK_EXECUTE:
             temp = node_init(ND_EXPRESSION, 0);
             temp->left = parse_expr(lexer, parser);
             break;
@@ -62,8 +63,8 @@ Node *parse_statement(Lexer *lexer, Parser *parser) {
     }
 
 
-    if (tokens[parser->ptr++].type != TK_NEWLINE) {
-        val = tokens[parser->ptr - 1];
+    if (tokens[parser->ptr - 1].type != TK_RCBRACKET && tokens[parser->ptr++].type != TK_NEWLINE) {
+        val = tokens[--parser->ptr];
         parser_free(parser);
         lexer_free(lexer);
         comp_error("Parser", "Expected Token! \";\"!", val.line, val.col);
@@ -134,7 +135,7 @@ Node *parse_expr(Lexer *lexer, Parser *parser) {
     size_t len = lexer->len;
     Token val = tokens[parser->ptr];
     TK_TYPE prev = TK_LBRACKET;
-    if (val.type > TK_LSBRACKET) {
+    if (val.type > TK_EXECUTE) {
         parser_free(parser);
         lexer_free(lexer);
         comp_error("Parser", "Unexpected Token!", val.line, val.col);
@@ -158,13 +159,16 @@ Node *parse_expr(Lexer *lexer, Parser *parser) {
         
         } else if (TK_LCBRACKET < val.type && val.type < TK_RCBRACKET) {
             if (prev != TK_VALUE && prev != TK_RSBRACKET && prev != TK_RBRACKET) {
-                UNEX_TK_EXPR
+                if (val.type != TK_EXECUTE || val.type == TK_EXECUTE && (prev < TK_LBRACKET || prev > TK_ASSIGNMENT)) {
+                    UNEX_TK_EXPR
+                }
             }
             while (!Op_Stack_is_empty(opstack) && Op_Stack_peek(opstack).type > TK_LSBRACKET
                     && (Op_Stack_peek(opstack).type < val.type
                         || (val.type != TK_ASSIGNMENT && Op_Stack_peek(opstack).type == val.type))) {
                 Node *temp = node_init(ND_NAND + Op_Stack_peekpop(opstack).type - TK_NAND, 0);
-                temp->right = ND_Stack_peekpop(nstack);
+                if (val.type != TK_EXECUTE)
+                    temp->right = ND_Stack_peekpop(nstack);
                 temp->left = ND_Stack_peekpop(nstack);
                 ND_Stack_push(nstack, temp);
             }
@@ -178,7 +182,8 @@ Node *parse_expr(Lexer *lexer, Parser *parser) {
                 break;
             while (!Op_Stack_is_empty(opstack) && Op_Stack_peek(opstack).type > TK_LSBRACKET) {
                 Node *temp = node_init(ND_NAND + Op_Stack_peekpop(opstack).type - TK_NAND, 0);
-                temp->right = ND_Stack_peekpop(nstack);
+                if (val.type != TK_EXECUTE)
+                    temp->right = ND_Stack_peekpop(nstack);
                 temp->left = ND_Stack_peekpop(nstack);
                 ND_Stack_push(nstack, temp);
             }
@@ -189,20 +194,28 @@ Node *parse_expr(Lexer *lexer, Parser *parser) {
                 ND_Stack_push(nstack, temp);
             }
         
+        } else if (val.type == TK_LCBRACKET) {
+            if (prev != TK_ASSIGNMENT) {
+                UNEX_TK_EXPR
+            }
+            ND_Stack_push(nstack, parse_scope(lexer, parser, false));
+            ++parser->ptr;
+            break;
         
         } else {
-            while (!Op_Stack_is_empty(opstack)) {
-                if (ND_Stack_size(nstack) < 2) {
-                    UNEX_TK_EXPR
-                }
-                Node *temp = node_init(ND_NAND + Op_Stack_peekpop(opstack).type - TK_NAND, 0);
-                temp->right = ND_Stack_peekpop(nstack);
-                temp->left = ND_Stack_peekpop(nstack);
-                ND_Stack_push(nstack, temp);
-            }
             break;
         }
         prev = val.type;
+    }
+    while (!Op_Stack_is_empty(opstack)) {
+        if (ND_Stack_size(nstack) < 2 && Op_Stack_peek(opstack).type != TK_EXECUTE) {
+            UNEX_TK_EXPR
+        }
+        Node *temp = node_init(ND_NAND + Op_Stack_peekpop(opstack).type - TK_NAND, 0);
+        if (temp->type != ND_EXECUTE)
+            temp->right = ND_Stack_peekpop(nstack);
+        temp->left = ND_Stack_peekpop(nstack);
+        ND_Stack_push(nstack, temp);
     }
     --parser->ptr;
     

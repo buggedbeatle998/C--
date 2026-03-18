@@ -79,6 +79,10 @@ Lexer *lex(const char *program, size_t len) {
                 lexer_push(lexer, TK_RCBRACKET, 0);
                 break;
 
+            case '$':
+                lexer_push(lexer, TK_EXECUTE, 0);
+                break;
+
             default:
                 if ('a' <= val && val <= 'z') {
                     lex_keyword(program, len, lexer);

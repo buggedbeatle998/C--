@@ -15,7 +15,11 @@ typedef struct {
 
 typedef struct {
     size_t ptr;
-    Program program;
+    Program preamble;
+    Program main_body;
+    size_t len;
+    size_t cap;
+    Node *functions;
 } Emitter;
 
 
@@ -26,6 +30,9 @@ void emit_expr(Node *statement, Emitter *emitter);
 
 Emitter *emitter_init(void);
 void emitter_free(Emitter *emitter);
+
+void emitter_precat(Emitter *emitter, const char *string);
 void emitter_cat(Emitter *emitter, const char *string);
+void function_push(Emitter *emitter, Node *function);
 
 #endif

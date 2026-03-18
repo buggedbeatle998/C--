@@ -115,7 +115,8 @@ int main(int argc, char *const argv[]) {
         if (use_c) {
             f = fopen(output, "w");
             if (f) {
-                fputs(emitter->program.string, f);
+                fputs(emitter->preamble.string, f);
+                fputs(emitter->main_body.string, f);
                 fclose(f);
                 if (verbose)
                     printf("File \"%s\" successfully compiled to C file \"%s\"!\n", argv[optind], output);
@@ -142,12 +143,14 @@ int main(int argc, char *const argv[]) {
             return -1;
 #endif
             f = popen(buff, "w");
-            fwrite(emitter->program.string, sizeof(char), emitter->program.len, f);
+            fwrite(emitter->preamble.string, sizeof(char), emitter->preamble.len, f);
+            fwrite(emitter->main_body.string, sizeof(char), emitter->main_body.len, f);
             pclose(f);
             free(buff);
             if (debug) {
                 f = fopen("g--test.c", "w");
-                fwrite(emitter->program.string, sizeof(char), emitter->program.len, f);
+                fwrite(emitter->preamble.string, sizeof(char), emitter->preamble.len, f);
+                fwrite(emitter->main_body.string, sizeof(char), emitter->main_body.len, f);
                 fclose(f);
             }
             if (verbose)

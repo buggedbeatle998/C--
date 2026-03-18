@@ -8,10 +8,11 @@
 
 Emitter *emit(Node global_scope) {
     Emitter *emitter = emitter_init();
-    emitter_cat(emitter, "#include <stdlib.h>\n#include <stdio.h>\n\nint main(void) {\n");
+    emitter_precat(emitter, "#include <stdlib.h>\n#include <stdio.h>\n\n");
 
     Node val = global_scope.left[0];
-    emitter_cat(emitter, "char *data = calloc(sizeof(char), ");
+    emitter_precat(emitter, "char *data;\n");
+    emitter_cat(emitter, "int main(void) {\ndata = calloc(sizeof(char), ");
     char temp[64];
     sprintf(temp, "%zu", val.left->value);
     emitter_cat(emitter, temp);
@@ -19,7 +20,14 @@ Emitter *emit(Node global_scope) {
 
     emit_scope(global_scope.left, global_scope.value, emitter);
 
-    emitter_cat(emitter, "free(data);\nreturn 0;\n}\n");
+    emitter_cat(emitter, "free(data);\nreturn 0;\n}\n\n");
+    
+    for (size_t i = 0; i < emitter->len; ++i) {
+        sprintf(temp, "void function%zu(void) ", i);
+        emitter_cat(emitter, temp);
+        emit_statement(emitter->functions + i, emitter);
+    }
+
     return emitter;
 }
 
@@ -27,11 +35,9 @@ Emitter *emit(Node global_scope) {
 void emit_statement(Node *statement, Emitter *emitter) {
     switch (statement->type) {
         case ND_SCOPE:
-            //ptr = emitter->ptr;
             emitter_cat(emitter, "{\n");
             emit_scope(statement->left, statement->value, emitter);
             emitter_cat(emitter, "}");
-            //emitter->ptr = ptr;
             break;
 
         case ND_EXPRESSION:
@@ -98,6 +104,12 @@ void emit_expr(Node *statement, Emitter *emitter) {
             emitter_cat(emitter, "]");
             break;
 
+        case ND_EXECUTE:
+            emitter_cat(emitter, "((void (*)(void))*(size_t *)&(");
+            emit_expr(statement->left, emitter);
+            emitter_cat(emitter, "))()");
+            break;
+
         case ND_NAND:
             emitter_cat(emitter, "~((");
             emit_expr(statement->left, emitter);
@@ -107,11 +119,29 @@ void emit_expr(Node *statement, Emitter *emitter) {
             break;
 
         case ND_ASSIGNMENT:
-            emitter_cat(emitter, "(");
-            emit_expr(statement->left, emitter);
-            emitter_cat(emitter, ") = (");
-            emit_expr(statement->right, emitter);
-            emitter_cat(emitter, ")");
+            if (statement->right->type == ND_SCOPE) {
+                sprintf(temp, "function%zu", emitter->len);
+
+                emitter_precat(emitter, "void ");
+                emitter_precat(emitter, temp);
+                emitter_precat(emitter, "(void);\n");
+
+                function_push(emitter, statement->right);
+
+                emit_statement(statement->right, emitter);
+                emitter_cat(emitter, "*(size_t *)&(");
+                emit_expr(statement->left, emitter);
+                emitter_cat(emitter, ") = (size_t)&");
+                emitter_cat(emitter, temp);
+                
+                statement->right = NULL;
+            } else {
+                emitter_cat(emitter, "(");
+                emit_expr(statement->left, emitter);
+                emitter_cat(emitter, ") = (");
+                emit_expr(statement->right, emitter);
+                emitter_cat(emitter, ")");
+            }
             break;
 
         default:
@@ -123,27 +153,64 @@ void emit_expr(Node *statement, Emitter *emitter) {
 Emitter *emitter_init(void) {
     Emitter *emitter = malloc(sizeof(Emitter));
     emitter->ptr = 0;
-    emitter->program.len = 0;
-    emitter->program.cap = 256;
-    emitter->program.string = calloc(sizeof(char), emitter->program.cap);
+
+    emitter->preamble.len = 0;
+    emitter->preamble.cap = 256;
+    emitter->preamble.string = calloc(sizeof(char), emitter->preamble.cap);
+
+    emitter->main_body.len = 0;
+    emitter->main_body.cap = 256;
+    emitter->main_body.string = calloc(sizeof(char), emitter->main_body.cap);
+
+    emitter->len = 0;
+    emitter->cap = 4;
+    emitter->functions = malloc(sizeof(Node) * emitter->cap);
 
     return emitter;
 }
 
 
 void emitter_free(Emitter *emitter) {
-    free(emitter->program.string);
+    free(emitter->preamble.string);
+    free(emitter->main_body.string);
+    for (size_t i = 0; i < emitter->len; ++i) {
+        node_free(emitter->functions + i);
+    }
+    free(emitter->functions);
     free(emitter);
 }
 
 
-void emitter_cat(Emitter *emitter, const char string[]) {
-    emitter->program.len += strlen(string);
+void emitter_precat(Emitter *emitter, const char string[]) {
+    emitter->preamble.len += strlen(string);
 
-    while (emitter->program.len > emitter->program.cap - 1) {
-        emitter->program.cap <<= 1;
-        emitter->program.string =  realloc(emitter->program.string, sizeof(char) * emitter->program.cap);
+    while (emitter->preamble.len > emitter->preamble.cap - 1) {
+        emitter->preamble.cap <<= 1;
+        emitter->preamble.string =  realloc(emitter->preamble.string, sizeof(char) * emitter->preamble.cap);
     }
     
-    strcat(emitter->program.string, string);
+    strcat(emitter->preamble.string, string);
+}
+
+
+void emitter_cat(Emitter *emitter, const char string[]) {
+    emitter->main_body.len += strlen(string);
+
+    while (emitter->main_body.len > emitter->main_body.cap - 1) {
+        emitter->main_body.cap <<= 1;
+        emitter->main_body.string =  realloc(emitter->main_body.string, sizeof(char) * emitter->main_body.cap);
+    }
+    
+    strcat(emitter->main_body.string, string);
+}
+
+
+void function_push(Emitter *emitter, Node *function) {
+    if (emitter->len >= emitter->cap) {
+        emitter->cap <<= 1;
+        emitter->functions = realloc(emitter->functions, sizeof(Node) * emitter->cap);
+    }
+
+    emitter->functions[emitter->len++] = *function;
+    free(function);
 }

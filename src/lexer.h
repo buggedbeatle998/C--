@@ -10,6 +10,7 @@ typedef enum TK_TYPE {
     TK_LBRACKET,
     TK_LSBRACKET,
     TK_LCBRACKET,
+    TK_EXECUTE,
     TK_NAND,
     TK_ASSIGNMENT,
     TK_RCBRACKET,
@@ -19,6 +20,7 @@ typedef enum TK_TYPE {
     TK_KEYWORD,
     TK_OUTPUT,
     TK_OUTPUT_INT,
+
     TK_NEWLINE,
     TK_EOF
 } TK_TYPE;
