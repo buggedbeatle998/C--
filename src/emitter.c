@@ -105,6 +105,7 @@ void emit_expr(Node *statement, Emitter *emitter) {
             break;
 
         case ND_EXECUTE:
+            // ((void (*)(void))*(size_t *)&(address))()
             emitter_cat(emitter, "((void (*)(void))*(size_t *)&(");
             emit_expr(statement->left, emitter);
             emitter_cat(emitter, "))()");
@@ -122,12 +123,14 @@ void emit_expr(Node *statement, Emitter *emitter) {
             if (statement->right->type == ND_SCOPE) {
                 sprintf(temp, "function%zu", emitter->len);
 
+                // void function0(void);
                 emitter_precat(emitter, "void ");
                 emitter_precat(emitter, temp);
                 emitter_precat(emitter, "(void);\n");
 
                 function_push(emitter, statement->right);
 
+                // *(size_t *)&(address) = (size_t)&function0
                 emit_statement(statement->right, emitter);
                 emitter_cat(emitter, "*(size_t *)&(");
                 emit_expr(statement->left, emitter);
